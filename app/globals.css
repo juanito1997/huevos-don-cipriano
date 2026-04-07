@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ── Brand palette ──────────────────────────────────────────── */
+:root {
+  --brand-50:  #FDF6EC;
+  --brand-100: #F5E6C8;
+  --brand-200: #E8D0A0;
+  --brand-300: #D4B07C;
+  --brand-400: #BA8C5A;
+  --brand-500: #8B5E3C;
+  --brand-600: #6B4226;
+  --brand-700: #4a2c0a;
+  --brand-800: #3a2008;
+  --brand-900: #2a1605;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background-color: var(--brand-50);
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Input / textarea base styles ──────────────────────────── */
+input, textarea, select {
+  color: #4a2c0a;
+}
+input::placeholder, textarea::placeholder {
+  color: #9CA3AF;
+  opacity: 1; /* Firefox reduces opacity by default */
+}
+
+/* Remove number input spinners */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* ── Brand color utilities (hardcoded — bypass JIT cache) ───── */
+@layer utilities {
+  /* ── Backgrounds ── */
+  .bg-brand-50  { background-color: #FDF6EC; }
+  .bg-brand-100 { background-color: #F5E6C8; }
+  .bg-brand-200 { background-color: #E8D0A0; }
+  .bg-brand-300 { background-color: #D4B07C; }
+  .bg-brand-400 { background-color: #BA8C5A; }
+  .bg-brand-500 { background-color: #8B5E3C; }
+  .bg-brand-600 { background-color: #6B4226; }
+  .bg-brand-700 { background-color: #4a2c0a; }
+  .bg-brand-800 { background-color: #3a2008; }
+  .bg-brand-900 { background-color: #2a1605; }
+
+  /* hover: */
+  .hover\:bg-brand-100:hover { background-color: #F5E6C8; }
+  .hover\:bg-brand-200:hover { background-color: #E8D0A0; }
+  .hover\:bg-brand-300:hover { background-color: #D4B07C; }
+  .hover\:bg-brand-400:hover { background-color: #BA8C5A; }
+  .hover\:bg-brand-500:hover { background-color: #8B5E3C; }
+  .hover\:bg-brand-600:hover { background-color: #6B4226; }
+  .hover\:bg-brand-700:hover { background-color: #4a2c0a; }
+  .hover\:bg-brand-800:hover { background-color: #3a2008; }
+  .hover\:bg-brand-900:hover { background-color: #2a1605; }
+
+  /* active: */
+  .active\:bg-brand-200:active { background-color: #E8D0A0; }
+  .active\:bg-brand-300:active { background-color: #D4B07C; }
+  .active\:bg-brand-800:active { background-color: #3a2008; }
+  .active\:bg-brand-900:active { background-color: #2a1605; }
+
+  /* disabled: */
+  .disabled\:bg-brand-200:disabled { background-color: #E8D0A0; }
+
+  /* ── Text ── */
+  .text-brand-100 { color: #F5E6C8; }
+  .text-brand-200 { color: #E8D0A0; }
+  .text-brand-300 { color: #D4B07C; }
+  .text-brand-400 { color: #BA8C5A; }
+  .text-brand-500 { color: #8B5E3C; }
+  .text-brand-600 { color: #6B4226; }
+  .text-brand-700 { color: #4a2c0a; }
+  .text-brand-800 { color: #3a2008; }
+  .text-brand-900 { color: #2a1605; }
+
+  /* disabled: */
+  .disabled\:text-brand-400:disabled { color: #BA8C5A; }
+
+  /* ── Borders ── */
+  .border-brand-100 { border-color: #F5E6C8; }
+  .border-brand-200 { border-color: #E8D0A0; }
+  .border-brand-300 { border-color: #D4B07C; }
+  .border-brand-400 { border-color: #BA8C5A; }
+  .border-brand-500 { border-color: #8B5E3C; }
+  .border-brand-600 { border-color: #6B4226; }
+  .border-brand-700 { border-color: #4a2c0a; }
+
+  /* hover: */
+  .hover\:border-brand-400:hover { border-color: #BA8C5A; }
+  .hover\:border-brand-500:hover { border-color: #8B5E3C; }
+
+  /* ── Focus ring ── */
+  .focus\:ring-brand-500:focus {
+    --tw-ring-color: #8B5E3C;
+    --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width, 0px)) var(--tw-ring-color);
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000);
+  }
+}
