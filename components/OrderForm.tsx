@@ -1,8 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { type Partner } from "./PartnerSelector";
+
+interface ClientData {
+  name:                 string;
+  address:              string;
+  addressExtra:         string;
+  phone:                string;
+  canLeaveAtDoor:       boolean;
+  deliveryInstructions: string;
+  isRegularClient:      boolean;
+  deliveryFrequency:    string;
+}
 
 /* ─── Price constants ─────────────────────────────────────── */
 const PRICE_A_SINGLE = 18_000;
@@ -208,6 +219,77 @@ export default function OrderForm({ partner, onChangePartner }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Autocomplete state ─────────────────────────────────────
+  const [allClients, setAllClients]       = useState<ClientData[]>([]);
+  const [suggestions, setSuggestions]     = useState<ClientData[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIdx, setHighlightedIdx]   = useState(-1);
+  const clientsFetchedRef = useRef(false);
+
+  async function fetchClients() {
+    if (clientsFetchedRef.current) return;
+    clientsFetchedRef.current = true;
+    try {
+      const res = await fetch("/api/clientes");
+      if (res.ok) {
+        const { clients } = await res.json() as { clients: ClientData[] };
+        setAllClients(clients);
+      }
+    } catch {
+      // best-effort — autocomplete silently unavailable
+    }
+  }
+
+  function handleClientChange(value: string) {
+    setClient(value);
+    setHighlightedIdx(-1);
+    const q = value.trim().toLowerCase();
+    if (q.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const filtered = allClients
+      .filter(c => c.name.toLowerCase().includes(q))
+      .slice(0, 8);
+    setSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
+  }
+
+  function applyClient(data: ClientData) {
+    setClient(data.name);
+    setAddress(data.address);
+    setAddressExtra(data.addressExtra);
+    setPhone(data.phone);
+    setCanLeaveAtDoor(data.canLeaveAtDoor);
+    setDeliveryInstructions(data.deliveryInstructions);
+    setIsRegularClient(data.isRegularClient);
+    const freq = (FREQUENCIES as readonly string[]).includes(data.deliveryFrequency)
+      ? data.deliveryFrequency as Frequency
+      : "Cada semana";
+    setDeliveryFrequency(freq);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setHighlightedIdx(-1);
+  }
+
+  function handleClientKeyDown(e: React.KeyboardEvent) {
+    if (!showSuggestions) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIdx(i => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIdx(i => Math.max(i - 1, -1));
+    } else if (e.key === "Enter" && highlightedIdx >= 0) {
+      e.preventDefault();
+      applyClient(suggestions[highlightedIdx]);
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+      setHighlightedIdx(-1);
+    }
+  }
+
   const totalTrays = qtyA + qtyAA + qtyAAA;
   const totalEggs  = totalTrays * EGGS_PER_TRAY;
   const total      = calcTotal(qtyA, qtyAA, qtyAAA);
@@ -296,6 +378,8 @@ export default function OrderForm({ partner, onChangePartner }: Props) {
     setQtyAA(0);
     setQtyAAA(0);
     setComments("");
+    setSuggestions([]);
+    setShowSuggestions(false);
 
     // Navigate to WhatsApp — works on mobile without popup blocker
     window.open(waUrl, "_blank", "noopener,noreferrer");
@@ -358,14 +442,42 @@ export default function OrderForm({ partner, onChangePartner }: Props) {
               <label className="block text-sm font-medium text-brand-700 mb-1.5">
                 Nombre del cliente <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={client}
-                onChange={(e) => setClient(e.target.value)}
-                placeholder="Ej. María García"
-                className={inputCls}
-                required
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={client}
+                  onChange={(e) => handleClientChange(e.target.value)}
+                  onFocus={() => {
+                    fetchClients();
+                    if (suggestions.length > 0) setShowSuggestions(true);
+                  }}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  onKeyDown={handleClientKeyDown}
+                  placeholder="Ej. María García"
+                  className={inputCls}
+                  required
+                  autoComplete="off"
+                />
+                {showSuggestions && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-brand-200 rounded-xl shadow-lg overflow-hidden max-h-64 overflow-y-auto">
+                    {suggestions.map((s, i) => (
+                      <button
+                        key={s.name}
+                        type="button"
+                        onMouseDown={() => applyClient(s)}
+                        className={`
+                          w-full px-4 py-2.5 text-left transition-colors
+                          ${i === highlightedIdx ? "bg-brand-100" : "hover:bg-brand-50"}
+                          ${i > 0 ? "border-t border-brand-100" : ""}
+                        `}
+                      >
+                        <p className="text-sm font-medium text-brand-900">{s.name}</p>
+                        <p className="text-xs text-brand-400 truncate">{s.address}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
