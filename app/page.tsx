@@ -1,44 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import PartnerSelector, { type Partner } from "@/components/PartnerSelector";
+import { useState } from "react";
 import OrderForm from "@/components/OrderForm";
+import PaymentManager from "@/components/PaymentManager";
 
-const STORAGE_KEY = "huevos_partner";
+type Tab = "pedido" | "pagos";
 
 export default function Home() {
-  const [partner, setPartner] = useState<Partner | null>(null);
-  const [hydrated, setHydrated] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>("pedido");
 
-  // Read from localStorage after mount (avoid SSR mismatch)
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY) as Partner | null;
-    if (saved) setPartner(saved);
-    setHydrated(true);
-  }, []);
+  return (
+    <div className="min-h-screen bg-brand-50">
+      <nav className="sticky top-0 z-50 bg-brand-800 px-4 pt-3 pb-2 flex gap-2 shadow-lg">
+        <button
+          onClick={() => setActiveTab("pedido")}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
+            activeTab === "pedido"
+              ? "bg-white text-brand-800 shadow-sm"
+              : "text-brand-400 hover:text-brand-100"
+          }`}
+        >
+          📋 Nuevo Pedido
+        </button>
+        <button
+          onClick={() => setActiveTab("pagos")}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
+            activeTab === "pagos"
+              ? "bg-white text-brand-800 shadow-sm"
+              : "text-brand-400 hover:text-brand-100"
+          }`}
+        >
+          💳 Gestión de Pagos
+        </button>
+      </nav>
 
-  function selectPartner(name: Partner) {
-    localStorage.setItem(STORAGE_KEY, name);
-    setPartner(name);
-  }
-
-  function changePartner() {
-    localStorage.removeItem(STORAGE_KEY);
-    setPartner(null);
-  }
-
-  // Avoid flash before hydration
-  if (!hydrated) {
-    return (
-      <div className="min-h-screen bg-brand-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!partner) {
-    return <PartnerSelector onSelect={selectPartner} />;
-  }
-
-  return <OrderForm partner={partner} onChangePartner={changePartner} />;
+      {activeTab === "pedido" && <OrderForm partner="Juancho" />}
+      {activeTab === "pagos" && <PaymentManager />}
+    </div>
+  );
 }

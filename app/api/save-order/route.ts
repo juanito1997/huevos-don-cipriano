@@ -3,7 +3,6 @@ import { google } from "googleapis";
 
 /* ─── Types ─────────────────────────────────────────────── */
 interface OrderPayload {
-  partner:              string;
   client:               string;
   address:              string;
   addressExtra:         string;
@@ -23,18 +22,28 @@ interface OrderPayload {
 function getAuth() {
   const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const key   = (process.env.GOOGLE_PRIVATE_KEY ?? "").replace(/\\n/g, "\n");
-
-  if (!email || !key) {
-    throw new Error("Faltan credenciales de Google en las variables de entorno");
-  }
-
+  if (!email || !key) throw new Error("Faltan credenciales de Google en las variables de entorno");
   return new google.auth.GoogleAuth({
-    credentials: {
-      client_email: email,
-      private_key:  key,
-    },
+    credentials: { client_email: email, private_key: key },
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
+}
+
+/* ─── Helpers de fecha (zona horaria Bogotá) ─────────────── */
+function getBogotaDate(): Date {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Bogota" }));
+}
+
+function getMonthName(): string {
+  const s = new Intl.DateTimeFormat("es-CO", {
+    month: "long",
+    timeZone: "America/Bogota",
+  }).format(new Date());
+  return s.charAt(0).toUpperCase() + s.slice(1); // "Mayo"
+}
+
+function getWeekOfMonth(): number {
+  return Math.ceil(getBogotaDate().getDate() / 7); // 1–5
 }
 
 /* ─── Handler ────────────────────────────────────────────── */
@@ -43,7 +52,7 @@ export async function POST(req: NextRequest) {
     const body: OrderPayload = await req.json();
 
     const {
-      partner, client, address, addressExtra, phone,
+      client, address, addressExtra, phone,
       canLeaveAtDoor, deliveryInstructions,
       isRegularClient, deliveryFrequency,
       qtyA, qtyAA, qtyAAA, total, comments,
@@ -60,7 +69,7 @@ export async function POST(req: NextRequest) {
     const auth   = getAuth();
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Build date/time in Colombian timezone
+    // Fecha y hora en zona horaria colombiana
     const now   = new Date();
     const fecha = now.toLocaleDateString("es-CO", {
       timeZone: "America/Bogota",
@@ -71,34 +80,62 @@ export async function POST(req: NextRequest) {
       hour: "2-digit", minute: "2-digit", hour12: true,
     });
 
-    const totalTrays = qtyA + qtyAA + qtyAAA;
-    const totalEggs  = totalTrays * 30;
+    const mes         = getMonthName();          // "Mayo"
+    const semana      = getWeekOfMonth();        // 1–5
+    const totalTrays  = qtyA + qtyAA + qtyAAA;
+    const totalEggs   = totalTrays * 30;
 
+    // ── Orden de columnas ──────────────────────────────────────
+    // A: Fecha  B: Mes  C: Semana  D: Cliente  E: Dirección
+    // F: Apto   G: WhatsApp  H: Portería  I: Instrucciones
+    // J: Regular  K: Frecuencia  L: Cant_A  M: Cant_AA  N: Cant_AAA
+    // O: Total_Cubetas  P: Total_Huevos  Q: Total_Precio
+    // R: Comentarios  S: PagoStatus
     const row = [
-      `${fecha} ${hora}`,           // A: Fecha y hora (Colombia)
-      partner,                      // B: Socio
-      client,                       // C: Cliente
-      address,                      // D: Dirección principal
-      addressExtra || "",           // E: Info adicional
-      `'${phone}`,                   // F: WhatsApp (apóstrofe fuerza texto en Sheets)
-      canLeaveAtDoor ? "SÍ" : "NO", // G: ¿Portería?
-      deliveryInstructions || "",   // H: Instrucciones
-      isRegularClient ? "SÍ" : "NO",// I: ¿Cliente regular?
-      deliveryFrequency || "",      // J: Frecuencia de entrega
-      qtyA,                         // K: Huevo A (bandejas)
-      qtyAA,                        // L: Huevo AA (bandejas)
-      qtyAAA,                       // M: Huevo AAA (bandejas)
-      totalTrays,                   // N: Total bandejas
-      totalEggs,                    // O: Total huevos
-      total,                        // P: Total pesos
-      comments || "",               // Q: Comentarios
+      `${fecha} ${hora}`,           // A: Fecha
+      mes,                          // B: Mes
+      semana,                       // C: Semana
+      client,                       // D: Cliente
+      address.trim(),               // E: Dirección principal
+      addressExtra.trim() || "",    // F: Apto/Casa
+      `'${phone}`,                  // G: WhatsApp
+      canLeaveAtDoor ? "SÍ" : "NO", // H: Portería
+      deliveryInstructions || "",   // I: Instrucciones
+      isRegularClient ? "SÍ" : "NO",// J: Regular
+      deliveryFrequency || "",      // K: Frecuencia
+      qtyA,                         // L: Cant_A
+      qtyAA,                        // M: Cant_AA
+      qtyAAA,                       // N: Cant_AAA
+      totalTrays,                   // O: Total_Cubetas
+      totalEggs,                    // P: Total_Huevos
+      total,                        // Q: Total_Precio
+      comments || "",               // R: Comentarios
+      "Pendiente",                  // S: PagoStatus
     ];
 
-    await sheets.spreadsheets.values.append({
+    // Paso 1: abrir espacio en fila 2 (debajo del header)
+    await sheets.spreadsheets.batchUpdate({
       spreadsheetId: sheetId,
-      range:         "A1",
+      requestBody: {
+        requests: [{
+          insertDimension: {
+            range: {
+              sheetId:    0,
+              dimension:  "ROWS",
+              startIndex: 1,   // 0-indexed → fila 2 en Sheets
+              endIndex:   2,
+            },
+            inheritFromBefore: false,
+          },
+        }],
+      },
+    });
+
+    // Paso 2: escribir los datos en la fila recién insertada
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: sheetId,
+      range:         "A2",
       valueInputOption: "USER_ENTERED",
-      insertDataOption: "INSERT_ROWS",
       requestBody: { values: [row] },
     });
 

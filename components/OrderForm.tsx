@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
-import { useState, useCallback, useRef } from "react";
-import { type Partner } from "./PartnerSelector";
+import { useState, useCallback, useRef, useEffect } from "react";
+
+export type Partner = "Juancho";
 
 interface ClientData {
   name:                 string;
@@ -25,9 +25,6 @@ const EGGS_PER_TRAY  = 30;
 /* ─── Partner phone numbers ───────────────────────────────── */
 const PARTNER_PHONES: Record<Partner, string> = {
   Juancho: "573108528165",
-  Leo:     "573164984947",
-  Juanpa:  "573142977068",
-  David:   "573153008044",
 };
 
 /* ─── Frequency options ───────────────────────────────────── */
@@ -200,10 +197,9 @@ const inputCls = `
 /* ─── Main component ──────────────────────────────────────── */
 interface Props {
   partner: Partner;
-  onChangePartner: () => void;
 }
 
-export default function OrderForm({ partner, onChangePartner }: Props) {
+export default function OrderForm({ partner }: Props) {
   const [client, setClient]                 = useState("");
   const [address, setAddress]               = useState("");
   const [addressExtra, setAddressExtra]     = useState("");
@@ -218,6 +214,18 @@ export default function OrderForm({ partner, onChangePartner }: Props) {
   const [comments, setComments] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fechaDisplay, setFechaDisplay] = useState("");
+
+  useEffect(() => {
+    const s = new Intl.DateTimeFormat("es-ES", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "America/Bogota",
+    }).format(new Date());
+    setFechaDisplay(s.charAt(0).toUpperCase() + s.slice(1));
+  }, []);
 
   // ── Autocomplete state ─────────────────────────────────────
   const [allClients, setAllClients]       = useState<ClientData[]>([]);
@@ -244,7 +252,7 @@ export default function OrderForm({ partner, onChangePartner }: Props) {
     setClient(value);
     setHighlightedIdx(-1);
     const q = value.trim().toLowerCase();
-    if (q.length < 2) {
+    if (q.length < 3) {
       setSuggestions([]);
       setShowSuggestions(false);
       return;
@@ -256,10 +264,33 @@ export default function OrderForm({ partner, onChangePartner }: Props) {
     setShowSuggestions(filtered.length > 0);
   }
 
+  // Separa la dirección principal del apto si el dato histórico los trae concatenados
+  // (ej: 'av 19 #130-90, 801' → address='av 19 #130-90', addressExtra='801')
+  function parseAddressParts(
+    rawAddress: string,
+    rawExtra: string
+  ): { address: string; addressExtra: string } {
+    // Si el campo extra ya viene poblado del Sheet, confiar en él sin tocar la dirección
+    if (rawExtra.trim()) {
+      return { address: rawAddress.trim(), addressExtra: rawExtra.trim() };
+    }
+    // Si la dirección tiene coma, separar en la primera coma para limpiar concatenados
+    const commaIdx = rawAddress.indexOf(",");
+    if (commaIdx !== -1) {
+      return {
+        address:      rawAddress.slice(0, commaIdx).trim(),
+        addressExtra: rawAddress.slice(commaIdx + 1).trim(),
+      };
+    }
+    return { address: rawAddress.trim(), addressExtra: "" };
+  }
+
   function applyClient(data: ClientData) {
+    const { address: cleanAddr, addressExtra: cleanExtra } =
+      parseAddressParts(data.address, data.addressExtra);
     setClient(data.name);
-    setAddress(data.address);
-    setAddressExtra(data.addressExtra);
+    setAddress(cleanAddr);
+    setAddressExtra(cleanExtra);
     setPhone(data.phone);
     setCanLeaveAtDoor(data.canLeaveAtDoor);
     setDeliveryInstructions(data.deliveryInstructions);
@@ -334,7 +365,6 @@ export default function OrderForm({ partner, onChangePartner }: Props) {
     // Save to Sheets (best-effort — failure doesn't block WhatsApp)
     try {
       const payload = {
-        partner,
         client:               client.trim(),
         address:              address.trim(),
         addressExtra:         addressExtra.trim(),
@@ -347,7 +377,7 @@ export default function OrderForm({ partner, onChangePartner }: Props) {
         qtyAA,
         qtyAAA,
         total,
-        comments: comments.trim(),
+        comments:             comments.trim(),
       };
 
       const res = await fetch("/api/save-order", {
@@ -392,45 +422,20 @@ export default function OrderForm({ partner, onChangePartner }: Props) {
     <div className="min-h-screen bg-brand-50 pb-10">
       {/* ── Header ──────────────────────────────────────────── */}
       <header className="bg-brand-700 text-white px-4 py-4 shadow-md">
-        <div className="max-w-lg mx-auto flex items-center gap-3">
-          <Image
-            src="/img/logo.png"
-            alt="Huevos Don Cipriano"
-            width={44}
-            height={44}
-            className="rounded-full object-contain bg-white/10 p-0.5 flex-shrink-0"
-            priority
-          />
-          <div className="flex-1 min-w-0">
-            <h1 className="font-bold text-lg leading-tight truncate">Huevos Don Cipriano</h1>
-            <p className="text-brand-300 text-xs">Socio: {partner}</p>
-          </div>
-          {/* Settings icon — changes partner */}
-          <button
-            onClick={onChangePartner}
-            title="Cambiar socio"
-            className="
-              flex-shrink-0 p-2 rounded-full
-              bg-brand-600 hover:bg-brand-500 active:bg-brand-800
-              transition-colors
-            "
-            aria-label="Cambiar socio"
-          >
-            <svg className="w-5 h-5 text-brand-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-          </button>
+        <div className="max-w-lg mx-auto">
+          <h1 className="font-bold text-lg leading-tight">Pedidos huevos</h1>
         </div>
       </header>
 
       {/* ── Form ────────────────────────────────────────────── */}
       <main className="max-w-lg mx-auto px-4 pt-6">
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
+
+          {/* ── Fecha ──────────────────────────────────── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-brand-100 px-5 py-3 flex items-center gap-3">
+            <span className="text-lg">📅</span>
+            <p className="text-sm font-medium text-brand-800">{fechaDisplay || "…"}</p>
+          </div>
 
           {/* ── Datos del cliente ─────────────────────────── */}
           <section className="bg-white rounded-2xl shadow-sm border border-brand-100 p-5 space-y-4">
