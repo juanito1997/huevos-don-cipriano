@@ -70,8 +70,7 @@ function buildWhatsAppMsg(
     : address.trim();
 
   const lines: string[] = [
-    `🥚 *Pedido – Huevos Juancho*`,
-    `👤 *Socio:* ${partner}`,
+    `🥚 *Pedido huevos*`,
     `📋 *Cliente:* ${client}`,
     `📍 *Dirección:* ${fullAddress}`,
     `📱 *WhatsApp:* ${phone}`,
@@ -82,7 +81,7 @@ function buildWhatsAppMsg(
     lines.push(`📝 *Instrucciones:* ${deliveryInstructions.trim()}`);
   }
 
-  lines.push(`🔄 *Cliente regular:* ${isRegularClient ? `Sí — ${deliveryFrequency}` : "No"}`);
+  lines.push(`🔄 *Cliente frecuente:* ${isRegularClient ? `Sí — ${deliveryFrequency}` : "No"}`);
 
 
   lines.push(``);
@@ -204,7 +203,7 @@ export default function OrderForm({ partner }: Props) {
   const [client, setClient]                 = useState("");
   const [address, setAddress]               = useState("");
   const [addressExtra, setAddressExtra]     = useState("");
-  const [phone, setPhone]                   = useState("+57 ");
+  const [phone, setPhone]                   = useState("");
   const [canLeaveAtDoor, setCanLeaveAtDoor] = useState(true);
   const [deliveryInstructions, setDeliveryInstructions] = useState("");
   const [isRegularClient, setIsRegularClient] = useState(false);
@@ -327,17 +326,13 @@ export default function OrderForm({ partner }: Props) {
   const total      = calcTotal(qtyA, qtyAA, qtyAAA);
 
   const handlePhoneChange = useCallback((v: string) => {
-    if (!v.startsWith("+57")) {
-      setPhone("+57 ");
-      return;
-    }
     setPhone(v);
   }, []);
 
   const isValid =
     client.trim() !== "" &&
     address.trim() !== "" &&
-    phone.replace(/\D/g, "").length >= 12 &&
+    phone.replace(/\D/g, "").length >= 10 &&
     totalTrays > 0;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -361,7 +356,9 @@ export default function OrderForm({ partner }: Props) {
       isRegularClient,
       deliveryFrequency
     );
-    const waUrl = `https://wa.me/${PARTNER_PHONES[partner]}?text=${encodeURIComponent(msg)}`;
+    const phoneDigits = phone.replace(/\D/g, "");
+    const waPhone = phoneDigits.startsWith("57") ? phoneDigits : `57${phoneDigits}`;
+    const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`;
 
     // Save to Sheets (best-effort — failure doesn't block WhatsApp)
     try {
@@ -400,7 +397,7 @@ export default function OrderForm({ partner }: Props) {
     setClient("");
     setAddress("");
     setAddressExtra("");
-    setPhone("+57 ");
+    setPhone("");
     setCanLeaveAtDoor(true);
     setDeliveryInstructions("");
     setIsRegularClient(false);
@@ -530,7 +527,7 @@ export default function OrderForm({ partner }: Props) {
                 type="tel"
                 value={phone}
                 onChange={(e) => handlePhoneChange(e.target.value)}
-                placeholder="+57 300 123 4567"
+                placeholder="310 123 4567"
                 className={inputCls}
                 required
               />
