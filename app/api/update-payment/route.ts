@@ -27,10 +27,10 @@ export async function POST(req: NextRequest) {
     const auth   = getAuth();
     const sheets = google.sheets({ version: "v4", auth });
 
-    // Escribe "SÍ" en la columna R de la fila exacta
+    // Escribe "SÍ" en la columna S de la fila exacta
     await sheets.spreadsheets.values.update({
       spreadsheetId: sheetId,
-      range:         `R${sheetRow}`,
+      range:         `S${sheetRow}`,
       valueInputOption: "USER_ENTERED",
       requestBody: { values: [["SÍ"]] },
     });
