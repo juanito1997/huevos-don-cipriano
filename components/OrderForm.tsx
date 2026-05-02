@@ -362,9 +362,7 @@ export default function OrderForm({ partner }: Props) {
       isRegularClient,
       deliveryFrequency
     );
-    const phoneDigits = phone.replace(/\D/g, "");
-    const waPhone = phoneDigits.startsWith("57") ? phoneDigits : `57${phoneDigits}`;
-    const waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`;
+    const waUrl = `https://wa.me/${PARTNER_PHONES[partner]}?text=${encodeURIComponent(msg)}`;
 
     // Save to Sheets (best-effort — failure doesn't block WhatsApp)
     try {
