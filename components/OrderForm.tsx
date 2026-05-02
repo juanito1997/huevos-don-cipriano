@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import Image from "next/image";
 
 export type Partner = "Juancho";
 
@@ -69,7 +70,7 @@ function buildWhatsAppMsg(
     : address.trim();
 
   const lines: string[] = [
-    `🥚 *Pedido – Huevos Don Cipriano*`,
+    `🥚 *Pedido – Huevos Juancho*`,
     `👤 *Socio:* ${partner}`,
     `📋 *Cliente:* ${client}`,
     `📍 *Dirección:* ${fullAddress}`,
@@ -422,8 +423,17 @@ export default function OrderForm({ partner }: Props) {
     <div className="min-h-screen bg-brand-50 pb-10">
       {/* ── Header ──────────────────────────────────────────── */}
       <header className="bg-brand-700 text-white px-4 py-4 shadow-md">
-        <div className="max-w-lg mx-auto">
-          <h1 className="font-bold text-lg leading-tight">Pedidos huevos</h1>
+        <div className="max-w-lg mx-auto flex items-center">
+          <Image
+            src="/icons/logo-don-luis.png"
+            alt="Logo Don Luis"
+            width={50}
+            height={50}
+            className="rounded-full mr-3 object-cover flex-shrink-0"
+          />
+          <h1 className="font-bold text-sm sm:text-lg leading-tight text-white">
+            Pedidos Huevos Don Luis, don Luis!
+          </h1>
         </div>
       </header>
 

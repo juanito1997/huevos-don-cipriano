@@ -2,16 +2,17 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Huevos Don Cipriano",
-  description: "Registro de pedidos de Huevos Don Cipriano",
+  title: "Huevos Juancho",
+  description: "Registro de pedidos de Huevos Juancho",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Don Cipriano",
+    title: "Juancho",
   },
   icons: {
-    apple: "/icons/icon-192.png",
+    apple: "/icons/logo-don-luis.png",
+    icon: "/icons/logo-don-luis.png",
   },
 };
 
@@ -34,7 +35,8 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" href="/icons/logo-don-luis.png" />
+        <link rel="icon" href="/icons/logo-don-luis.png" type="image/png" />
       </head>
       <body className="min-h-screen bg-brand-50">
         {children}
