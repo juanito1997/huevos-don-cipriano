@@ -285,13 +285,19 @@ export default function OrderForm({ partner }: Props) {
     return { address: rawAddress.trim(), addressExtra: "" };
   }
 
+  function stripCountryCode(raw: string): string {
+    const digits = raw.replace(/\D/g, "");
+    if (digits.startsWith("57") && digits.length > 10) return digits.slice(2);
+    return digits;
+  }
+
   function applyClient(data: ClientData) {
     const { address: cleanAddr, addressExtra: cleanExtra } =
       parseAddressParts(data.address, data.addressExtra);
     setClient(data.name);
     setAddress(cleanAddr);
     setAddressExtra(cleanExtra);
-    setPhone(data.phone);
+    setPhone(stripCountryCode(data.phone));
     setCanLeaveAtDoor(data.canLeaveAtDoor);
     setDeliveryInstructions(data.deliveryInstructions);
     setIsRegularClient(data.isRegularClient);
@@ -527,7 +533,7 @@ export default function OrderForm({ partner }: Props) {
                 type="tel"
                 value={phone}
                 onChange={(e) => handlePhoneChange(e.target.value)}
-                placeholder="310 123 4567"
+                placeholder="Ej. 3101234567"
                 className={inputCls}
                 required
               />
