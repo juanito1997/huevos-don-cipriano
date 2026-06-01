@@ -34,7 +34,7 @@ export async function GET() {
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: "A:J", // columns needed: C=nombre … J=frecuencia
+      range: "A:K", // columns needed: D=nombre … K=frecuencia
     });
 
     const rows = res.data.values ?? [];
@@ -43,19 +43,20 @@ export async function GET() {
     const clientMap = new Map<string, ClientData>();
 
     for (const row of rows) {
-      const name = ((row[2] as string) ?? "").trim();
+      // El nombre del cliente está en el Índice 3 (Columna D)
+      const name = row.length > 3 ? ((row[3] as string) ?? "").trim() : "";
       if (!name) continue;
 
       clientMap.set(name.toLowerCase(), {
         name,
-        address:              ((row[3] as string) ?? "").trim(),
-        addressExtra:         ((row[4] as string) ?? "").trim(),
-        // Sheet stores leading apostrophe to force text; strip it if present
-        phone:                ((row[5] as string) ?? "").replace(/^'/, "").trim(),
-        canLeaveAtDoor:       ((row[6] as string) ?? "").toUpperCase() === "SÍ",
-        deliveryInstructions: ((row[7] as string) ?? "").trim(),
-        isRegularClient:      ((row[8] as string) ?? "").toUpperCase() === "SÍ",
-        deliveryFrequency:    ((row[9] as string) ?? "").trim(),
+        address:              row.length > 4 ? ((row[4] as string) ?? "").trim() : "",
+        addressExtra:         row.length > 5 ? ((row[5] as string) ?? "").trim() : "",
+        // La hoja puede guardar un apóstrofe al principio para forzar texto; lo removemos si existe
+        phone:                row.length > 6 ? ((row[6] as string) ?? "").replace(/^'/, "").trim() : "",
+        canLeaveAtDoor:       row.length > 7 ? ((row[7] as string) ?? "").toUpperCase() === "SÍ" : false,
+        deliveryInstructions: row.length > 8 ? ((row[8] as string) ?? "").trim() : "",
+        isRegularClient:      row.length > 9 ? ((row[9] as string) ?? "").toUpperCase() === "SÍ" : false,
+        deliveryFrequency:    row.length > 10 ? ((row[10] as string) ?? "").trim() : "",
       });
     }
 
