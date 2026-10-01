@@ -19,8 +19,8 @@ interface ClientData {
 /* ─── Price constants ─────────────────────────────────────── */
 const PRICE_A_SINGLE = 18_000;
 const PRICE_A_BULK   = 15_000; // 2+ bandejas
-const PRICE_AA       = 21_000;
-const PRICE_AAA      = 24_000;
+const PRICE_AA       = 22_000;
+const PRICE_AAA      = 25_000;
 const EGGS_PER_TRAY  = 30;
 
 /* ─── Partner phone numbers ───────────────────────────────── */
